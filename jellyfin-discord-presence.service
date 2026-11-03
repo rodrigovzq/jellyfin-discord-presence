@@ -1,0 +1,19 @@
+[Unit]
+Description=Jellyfin -> Discord Rich Presence
+After=network-online.target
+# Discord must already be running with the same user that owns the IPC socket.
+# If you installed the headless setup from docs/headless-discord.md, use:
+# Requires=discord-headless.service
+# After=discord-headless.service
+
+[Service]
+Type=simple
+# Must match the user running Discord: the socket is at $XDG_RUNTIME_DIR/discord-ipc-0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+EnvironmentFile=/etc/jellyfin-presence.env
+ExecStart=/usr/local/bin/jellyfin-discord-presence.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
