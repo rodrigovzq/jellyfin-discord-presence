@@ -1,7 +1,7 @@
 # jellyfin-discord-presence
 
 Show what you are watching on [Jellyfin](https://jellyfin.org/) as a Discord Rich
-Presence card, with the title, a live progress bar and pause state.
+Presence card: poster, title, live progress bar and pause state.
 
 ```
 Watching Jellyfin
@@ -23,6 +23,10 @@ desktop, or a headless client on a server — and reads Jellyfin's sessions over
 Because it reads the server's sessions, it doesn't matter where playback happens: the
 Jellyfin web UI, an Android TV client, Infuse, the mobile app. If the session exists,
 the card appears.
+
+The poster is resolved from a public source (TVMaze for series, Wikipedia for movies)
+because Discord loads Rich Presence images through its own proxy, which cannot reach a
+private Jellyfin.
 
 ## Requirements
 
@@ -64,8 +68,9 @@ sudo nano /etc/jellyfin-presence.env
 | `JF_KEY` | yes | — | API key from step 2 |
 | `JF_USER` | no | *(any)* | Only show this Jellyfin username's playback |
 | `DISCORD_CLIENT_ID` | yes | — | Application ID from step 1 |
-| `DISCORD_ASSET` | no | `jellyfin` | Rich Presence asset key |
+| `DISCORD_ASSET` | no | `jellyfin` | Fallback image when no poster is found |
 | `POLL` | no | `15` | Seconds between polls |
+| `ART_CACHE` | no | `~/.cache/jellyfin-presence-artwork.json` | Where resolved poster URLs are cached |
 
 ### 5. Test before installing the service
 
@@ -105,6 +110,7 @@ for running the Discord client on a virtual display (~500 MB RAM).
 | `AttributeError: 'int' object has no attribute 'value'` | An old edit passed `activity_type=3`; the enum is required (already handled here) |
 | Card shows "Playing" instead of "Watching" | Same as above — the enum sets the label |
 | Progress bar jumps or restarts | Jellyfin reports positions in 10-second granularity to clients |
+| Card without poster | No match on TVMaze/Wikipedia for that title; the app logo is used instead |
 | Service restart-loops with `status=203/EXEC` | The script isn't executable: `chmod 755` |
 | Card hidden in your profile | While Spotify is playing, Discord shows only the Spotify card |
 
@@ -120,9 +126,10 @@ curl -H 'Authorization: MediaBrowser Token="'"$JF_KEY"'"' "$JF_URL/Sessions"
 
 - One card per Discord app; if you run this next to another presence, Discord shows the
   most recent one.
-- No poster art from the media server: Rich Presence images must be app assets or
-  publicly reachable URLs, and Discord's proxy can't fetch a private Jellyfin. A static
-  logo is used instead.
+- The poster is not the file from your library: Discord's image proxy fetches the URL
+  from **its** servers, so an image served by a private Jellyfin (LAN/Tailscale) never
+  loads. Posters are resolved from public sources instead — TVMaze for series, Wikipedia
+  for movies — and cached. Titles that don't match fall back to the app logo.
 - No playback controls and no "Listening to Spotify"-style section: those are exclusive to
   Discord's official partner integrations.
 
